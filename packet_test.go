@@ -52,12 +52,12 @@ func TestMakeBuffer(t *testing.T) {
 }
 
 func testEncryptionMethod(method int, shouldFail bool, t *testing.T) {
-	var e *Encryption
+	var e *encryption
 	iv := make([]byte, 128)
 	password := "abc"
 	plain := []byte("hello")
 	var err error
-	e = NewEncryption(method, iv, password)
+	e = newEncryption(method, iv, password)
 	err = e.encrypt(plain)
 	if !shouldFail && err != nil {
 		t.Errorf("Encryption error on %d: %s", method, err)
@@ -104,10 +104,10 @@ func TestSession(t *testing.T) {
 	packet := new(bytes.Buffer)
 	iv := make([]byte, 128)
 	rand.Read(iv)
-	binary.Write(packet, binary.BigEndian, iv)
+	binary.write(packet, binary.BigEndian, iv)
 	timestamp := uint32(time.Now().Unix())
-	binary.Write(packet, binary.BigEndian, timestamp)
-	ip, err := ReadInitializationPacket(packet)
+	binary.write(packet, binary.BigEndian, timestamp)
+	ip, err := readInitializationPacket(packet)
 	if err != nil {
 		t.Errorf("Error reading initialization packet: %s", err)
 	} else {
@@ -119,12 +119,12 @@ func TestSession(t *testing.T) {
 		}
 	}
 	// create Encryption
-	enc := NewEncryption(ENCRYPT_NONE, ip.iv, "testpassword")
+	enc := newEncryption(ENCRYPT_NONE, ip.iv, "testpassword")
 	// create message
-	msg := NewDataPacket(ip.timestamp, STATE_OK, "testHost", "testService", "A plugin message")
+	msg := newDataPacket(ip.timestamp, STATE_OK, "testHost", "testService", "A plugin message")
 	// write message
 	writer := new(bytes.Buffer)
-	err = msg.Write(writer, enc)
+	err = msg.write(writer, enc)
 	if err != nil {
 		t.Errorf("Error writing message: %s", err)
 	} else {
@@ -133,22 +133,24 @@ func TestSession(t *testing.T) {
 }
 
 func TestServer(t *testing.T) {
+	// TODO: disable the Skip if you have a real NSCA server to test against
+	t.Skip("Skipping test that uses a real NSCA server")
 	conn, err := net.Dial("tcp", ":5667")
 	if err != nil {
 		t.Fatalf("Could not connect to server: %s", err)
 	}
 	defer conn.Close()
-	ip, err := ReadInitializationPacket(conn)
+	ip, err := readInitializationPacket(conn)
 	if err != nil {
 		t.Fatalf("Could not read initialization packet: %s", err)
 	}
 	// create Encryption
-	enc := NewEncryption(ENCRYPT_NONE, ip.iv, "testpassword")
+	enc := newEncryption(ENCRYPT_NONE, ip.iv, "testpassword")
 	// create message
-	msg := NewDataPacket(ip.timestamp, STATE_OK, "testHost", "testService", "A plugin message")
+	msg := newDataPacket(ip.timestamp, STATE_OK, "testHost", "testService", "A plugin message")
 	// write message
 	for i := 0; i < 10; i++ {
-		err = msg.Write(conn, enc)
+		err = msg.write(conn, enc)
 		if err != nil {
 			t.Errorf("Error writing message: %s", err)
 		}

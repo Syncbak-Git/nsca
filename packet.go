@@ -49,7 +49,7 @@ const (
 	ENCRYPT_SAFERPLUS          /* SAFER+ */              /* UNUSED */
 )
 
-type DataPacket struct {
+type dataPacket struct {
 	packetVersion      int16
 	crc32              uint32
 	timestamp          uint32
@@ -59,18 +59,18 @@ type DataPacket struct {
 	pluginOutput       string // 512 char max
 }
 
-type InitializationPacket struct {
+type initializationPacket struct {
 	iv        []byte // 128 bytes
 	timestamp uint32
 }
 
-type Encryption struct {
+type encryption struct {
 	method   int
 	iv       []byte
 	password []byte
 }
 
-func (e *Encryption) encrypt(b []byte) error {
+func (e *encryption) encrypt(b []byte) error {
 	if e.method == ENCRYPT_NONE {
 		return nil
 	}
@@ -149,8 +149,8 @@ func (e *Encryption) encrypt(b []byte) error {
 	return nil
 }
 
-func NewEncryption(method int, iv []byte, password string) *Encryption {
-	e := Encryption{
+func newEncryption(method int, iv []byte, password string) *encryption {
+	e := encryption{
 		method:   method,
 		iv:       make([]byte, len(iv)),
 		password: make([]byte, len(password)),
@@ -160,8 +160,8 @@ func NewEncryption(method int, iv []byte, password string) *Encryption {
 	return &e
 }
 
-func ReadInitializationPacket(reader io.Reader) (*InitializationPacket, error) {
-	p := InitializationPacket{iv: make([]byte, 128)}
+func readInitializationPacket(reader io.Reader) (*initializationPacket, error) {
+	p := initializationPacket{iv: make([]byte, 128)}
 	err := binary.Read(reader, binary.BigEndian, p.iv)
 	if err != nil {
 		return nil, err
@@ -194,8 +194,8 @@ func makeBuffer(s string, length int) ([]byte, error) {
 	return b, nil
 }
 
-func NewDataPacket(serverTimestamp uint32, returnCode int16, hostName, serviceDescription, pluginOutput string) *DataPacket {
-	d := DataPacket{
+func newDataPacket(serverTimestamp uint32, returnCode int16, hostName, serviceDescription, pluginOutput string) *dataPacket {
+	d := dataPacket{
 		packetVersion:      3,
 		timestamp:          serverTimestamp,
 		returnCode:         returnCode,
@@ -206,7 +206,7 @@ func NewDataPacket(serverTimestamp uint32, returnCode int16, hostName, serviceDe
 	return &d
 }
 
-func (p *DataPacket) Write(w io.Writer, e *Encryption) error {
+func (p *dataPacket) write(w io.Writer, e *encryption) error {
 	if p.packetVersion == 0 {
 		p.packetVersion = 3
 	}
@@ -253,7 +253,7 @@ func (p *DataPacket) Write(w io.Writer, e *Encryption) error {
 		return err
 	}
 	if n != len(b) {
-		return fmt.Errorf("Wrong byte count returned from Write: expected %d, got %d", len(b), n)
+		return fmt.Errorf("Wrong byte count returned from write: expected %d, got %d", len(b), n)
 	}
 	return nil
 }
