@@ -215,27 +215,35 @@ func (p *DataPacket) Write(w io.Writer, e *Encryption) error {
 	if err != nil {
 		return err
 	}
-	service, err := makeBuffer(p.hostName, 128)
+	service, err := makeBuffer(p.serviceDescription, 128)
 	if err != nil {
 		return err
 	}
-	output, err := makeBuffer(p.hostName, 512)
+	output, err := makeBuffer(p.pluginOutput, 512)
+	if err != nil {
+		return err
+	}
+	// 2 bytes for c struct padding
+	padding, err := makeBuffer("", 2)
 	if err != nil {
 		return err
 	}
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, p.packetVersion)
+	binary.Write(buf, binary.BigEndian, padding)
 	binary.Write(buf, binary.BigEndian, p.crc32)
 	binary.Write(buf, binary.BigEndian, p.timestamp)
 	binary.Write(buf, binary.BigEndian, p.returnCode)
 	binary.Write(buf, binary.BigEndian, hostName)
 	binary.Write(buf, binary.BigEndian, service)
 	binary.Write(buf, binary.BigEndian, output)
+	binary.Write(buf, binary.BigEndian, padding)
+
 	b := buf.Bytes()
 	p.crc32 = crc32.ChecksumIEEE(b)
 	crc := make([]byte, 4)
 	binary.BigEndian.PutUint32(crc, p.crc32)
-	copy(b[16:], crc)
+	copy(b[4:], crc)
 	err = e.encrypt(b)
 	if err != nil {
 		return err

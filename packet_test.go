@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"net"
 	"testing"
 	"time"
 )
@@ -128,5 +129,28 @@ func TestSession(t *testing.T) {
 		t.Errorf("Error writing message: %s", err)
 	} else {
 		// check message
+	}
+}
+
+func TestServer(t *testing.T) {
+	conn, err := net.Dial("tcp", ":5667")
+	if err != nil {
+		t.Fatalf("Could not connect to server: %s", err)
+	}
+	defer conn.Close()
+	ip, err := ReadInitializationPacket(conn)
+	if err != nil {
+		t.Fatalf("Could not read initialization packet: %s", err)
+	}
+	// create Encryption
+	enc := NewEncryption(ENCRYPT_NONE, ip.iv, "testpassword")
+	// create message
+	msg := NewDataPacket(ip.timestamp, STATE_OK, "testHost", "testService", "A plugin message")
+	// write message
+	for i := 0; i < 10; i++ {
+		err = msg.Write(conn, enc)
+		if err != nil {
+			t.Errorf("Error writing message: %s", err)
+		}
 	}
 }
