@@ -90,6 +90,7 @@ func (n *NSCAServer) Connect(connectInfo ServerInfo) error {
 func (n *NSCAServer) Close() {
 	if n.conn != nil {
 		n.conn.Close()
+		n.conn = nil
 	}
 	n.serverTimestamp = 0
 	n.encryption = nil
