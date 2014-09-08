@@ -104,9 +104,9 @@ func TestSession(t *testing.T) {
 	packet := new(bytes.Buffer)
 	iv := make([]byte, 128)
 	rand.Read(iv)
-	binary.write(packet, binary.BigEndian, iv)
+	binary.Write(packet, binary.BigEndian, iv)
 	timestamp := uint32(time.Now().Unix())
-	binary.write(packet, binary.BigEndian, timestamp)
+	binary.Write(packet, binary.BigEndian, timestamp)
 	ip, err := readInitializationPacket(packet)
 	if err != nil {
 		t.Errorf("Error reading initialization packet: %s", err)
