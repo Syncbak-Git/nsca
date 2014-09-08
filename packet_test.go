@@ -104,9 +104,9 @@ func TestSession(t *testing.T) {
 	packet := new(bytes.Buffer)
 	iv := make([]byte, 128)
 	rand.Read(iv)
-	binary.write(packet, binary.BigEndian, iv)
+	binary.Write(packet, binary.BigEndian, iv)
 	timestamp := uint32(time.Now().Unix())
-	binary.write(packet, binary.BigEndian, timestamp)
+	binary.Write(packet, binary.BigEndian, timestamp)
 	ip, err := readInitializationPacket(packet)
 	if err != nil {
 		t.Errorf("Error reading initialization packet: %s", err)
@@ -134,7 +134,7 @@ func TestSession(t *testing.T) {
 
 func TestServer(t *testing.T) {
 	// TODO: disable the Skip if you have a real NSCA server to test against
-	t.Skip("Skipping test that uses a real NSCA server")
+	//t.Skip("Skipping test that uses a real NSCA server")
 	conn, err := net.Dial("tcp", ":5667")
 	if err != nil {
 		t.Fatalf("Could not connect to server: %s", err)
@@ -145,7 +145,7 @@ func TestServer(t *testing.T) {
 		t.Fatalf("Could not read initialization packet: %s", err)
 	}
 	// create Encryption
-	enc := newEncryption(ENCRYPT_NONE, ip.iv, "testpassword")
+	enc := newEncryption(ENCRYPT_DES, ip.iv, "password")
 	// create message
 	msg := newDataPacket(ip.timestamp, STATE_OK, "testHost", "testService", "A plugin message")
 	// write message
