@@ -3,6 +3,7 @@ package nsca
 
 import (
 	"net"
+	"time"
 )
 
 // ServerInfo contains the configuration information for an NSCA server
@@ -15,6 +16,8 @@ type ServerInfo struct {
 	EncryptionMethod int
 	// Password is used in encryption.
 	Password string
+	// Timeout is the connect/read/write network timeout
+	Timeout time.Duration
 }
 
 // Message is the contents of an NSCA message
@@ -66,11 +69,18 @@ type NSCAServer struct {
 	conn            net.Conn
 	encryption      *encryption
 	serverTimestamp uint32
+	timeout         time.Duration
 }
 
 // Connect to an NSCA server.
 func (n *NSCAServer) Connect(connectInfo ServerInfo) error {
-	conn, err := net.Dial("tcp", net.JoinHostPort(connectInfo.Host, connectInfo.Port))
+	var conn net.Conn
+	var err error
+	if connectInfo.Timeout > 0 {
+		conn, err = net.DialTimeout("tcp", net.JoinHostPort(connectInfo.Host, connectInfo.Port), connectInfo.Timeout)
+	} else {
+		conn, err = net.Dial("tcp", net.JoinHostPort(connectInfo.Host, connectInfo.Port))
+	}
 	if err != nil {
 		return err
 	}
@@ -82,6 +92,7 @@ func (n *NSCAServer) Connect(connectInfo ServerInfo) error {
 	n.Close()
 	n.encryption = newEncryption(connectInfo.EncryptionMethod, ip.iv, connectInfo.Password)
 	n.serverTimestamp = ip.timestamp
+	n.timeout = connectInfo.Timeout
 	n.conn = conn
 	return nil
 }
@@ -94,11 +105,15 @@ func (n *NSCAServer) Close() {
 	}
 	n.serverTimestamp = 0
 	n.encryption = nil
+	n.timeout = 0
 }
 
 // Send an NSCA message.
 func (n *NSCAServer) Send(message *Message) error {
 	msg := newDataPacket(n.serverTimestamp, message.State, message.Host, message.Service, message.Message)
+	if n.timeout > 0 {
+		n.conn.SetDeadline(time.Now().Add(n.timeout))
+	}
 	err := msg.write(n.conn, n.encryption)
 	return err
 }
