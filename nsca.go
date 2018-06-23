@@ -18,6 +18,8 @@ type ServerInfo struct {
 	Password string
 	// Timeout is the connect/read/write network timeout
 	Timeout time.Duration
+	// NoKeepAlive is a optional property to prevent KeepAlive/re-use of previously initiated connection
+	NoKeepAlive bool
 }
 
 // Message is the contents of an NSCA message
@@ -55,7 +57,7 @@ func RunEndpoint(connectInfo ServerInfo, quit <-chan interface{}, messages <-cha
 			if m.Status != nil {
 				m.Status <- err
 			}
-			if err != nil {
+			if err != nil || connectInfo.NoKeepAlive {
 				server.Close()
 				err = nil
 			}
